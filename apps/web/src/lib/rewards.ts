@@ -20,11 +20,47 @@ const usdcSacId = () => config.contracts.usdcSac;
 // USDC, like every Stellar asset, has 7 decimals (1 USDC = 10_000_000 stroops).
 const ONE_USDC = 10_000_000n;
 
-/** Parse a human display amount ("2.5") into i128 stroops. */
+/** Thrown when an amount string is not a valid USDC amount. */
+export class InvalidAmountError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidAmountError';
+  }
+}
+
+/** Parse a human display amount ("2.5" or "2,5") into i128 stroops. */
 export function usdcToStroops(display: string): bigint {
-  const [whole, frac = ''] = display.trim().split('.');
+  const trimmed = display.trim();
+  
+  // Strict validation: only digits, optional comma or dot separator, optional fractional part
+  // Pattern: optional digits, optional separator (comma or dot), optional fractional digits
+  // Rejects: negative numbers, multiple separators, exponents, non-numeric characters
+  if (!/^\d*([.,]\d+)?$/.test(trimmed)) {
+    throw new InvalidAmountError(`Invalid amount: "${display}"`);
+  }
+  
+  // Normalize comma to dot for parsing
+  const normalized = trimmed.replace(',', '.');
+  const [whole, frac = ''] = normalized.split('.');
   const fracPadded = (frac + '0000000').slice(0, 7);
-  return BigInt(whole || '0') * ONE_USDC + BigInt(fracPadded || '0');
+  const result = BigInt(whole || '0') * ONE_USDC + BigInt(fracPadded || '0');
+  
+  // Reject zero or negative results (negative should be caught by regex, but double-check)
+  if (result <= 0n) {
+    throw new InvalidAmountError(`Amount must be greater than zero: "${display}"`);
+  }
+  
+  return result;
+}
+
+/** Check if a string is a valid USDC amount for UI validation (non-throwing). */
+export function isValidAmount(display: string): boolean {
+  try {
+    usdcToStroops(display);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Format i128 stroops back to a trimmed display string. */
