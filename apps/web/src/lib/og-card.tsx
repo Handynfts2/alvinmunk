@@ -102,7 +102,10 @@ export function ogCard(opts: {
         background: `radial-gradient(120% 120% at 20% 0%, #1a0b2e 0%, ${BG} 60%)`,
         color: FG,
         padding: '64px',
-        fontFamily: 'sans-serif',
+        // Must match the `name` of every font entry passed to `ImageResponse` (see the two
+        // opengraph-image.tsx routes) — Satori only falls back to a font whose CSS family
+        // matches this name; nothing here declares its own fontFamily.
+        fontFamily: 'Noto Sans',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
