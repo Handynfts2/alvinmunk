@@ -38,25 +38,24 @@ export class InvalidAmountError extends Error {
 /** Parse a human display amount ("2.5" or "2,5") into i128 stroops. */
 export function usdcToStroops(display: string): bigint {
   const trimmed = display.trim();
-  
-  // Strict validation: only digits, optional comma or dot separator, optional fractional part
-  // Pattern: optional digits, optional separator (comma or dot), optional fractional digits
-  // Rejects: negative numbers, multiple separators, exponents, non-numeric characters
+
+  // Digits, with an optional single , or . separator followed by digits — rejects
+  // negatives, multiple separators, exponents and any other non-numeric input.
   if (!/^\d*([.,]\d+)?$/.test(trimmed)) {
     throw new InvalidAmountError(`Invalid amount: "${display}"`);
   }
-  
-  // Normalize comma to dot for parsing
+
   const normalized = trimmed.replace(',', '.');
   const [whole, frac = ''] = normalized.split('.');
+  // Truncate (never round up) beyond 7 decimals, so a tip never over-pays.
   const fracPadded = (frac + '0000000').slice(0, 7);
   const result = BigInt(whole || '0') * ONE_USDC + BigInt(fracPadded || '0');
-  
-  // Reject zero or negative results (negative should be caught by regex, but double-check)
+
+  // Zero, empty and sub-stroop input (truncates to 0) are not valid amounts.
   if (result <= 0n) {
     throw new InvalidAmountError(`Amount must be greater than zero: "${display}"`);
   }
-  
+
   return result;
 }
 
