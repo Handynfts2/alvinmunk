@@ -12,7 +12,10 @@ vi.mock('next/og', () => ({
 }));
 
 const ogResolveMock = vi.fn();
-const ogCardMock = vi.fn(() => ({ type: 'div', props: {} }));
+const ogCardMock = vi.fn<(...a: unknown[]) => { type: string; props: object }>(() => ({
+  type: 'div',
+  props: {},
+}));
 vi.mock('@/lib/og-card', () => ({
   ogResolve: (...a: unknown[]) => ogResolveMock(...a),
   ogCard: (...a: unknown[]) => ogCardMock(...a),
